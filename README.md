@@ -1,7 +1,3 @@
-Here's a `README.md` for your project:
-
----
-
 # GitCCPy - Selective File Copy for FTP Deployment
 
 ## Overview
