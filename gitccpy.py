@@ -37,6 +37,17 @@ if CONFIGS['DESTINATION_PATH'] == None:
 
 copied_count = 0
 
+def clear_destination(folder):
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
 def cp(from_path, to_path):
     if not os.path.isfile(from_path): return
     os.makedirs(os.path.dirname(to_path), exist_ok=True)
@@ -65,7 +76,10 @@ result = subprocess.run(git_command, stdout=subprocess.PIPE, stderr=subprocess.P
 
 if result.returncode == 0:
     paths = result.stdout.splitlines()
+    
+    clear_destination(CONFIGS['DESTINATION_PATH'])
     copy_paths(paths)
+
     if copied_count == 0:
         print('No changes in ', CONFIGS['LOCAL_PREXFIX'])
     else:
