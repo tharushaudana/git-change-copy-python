@@ -68,22 +68,72 @@ def copy_paths(paths):
         cp(copy_from, copy_to)
         copied_count += 1
 
-######################################## [execute git diff-tree]
+def get_last_commit():
+    if not os.path.isfile(CURRENT_PATH + '/' + '.gitccpy.lastcommit'): return None
+    with open(CURRENT_PATH + '/' + '.gitccpy.lastcommit', 'r') as f:
+        return f.read()
+    
+def store_last_commit(id):
+    with open(CURRENT_PATH + '/' + '.gitccpy.lastcommit', 'w') as f:
+        f.write(id)
 
-git_command = ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', COMMIT_ID]
+######################################## [read last commit if exists, if user not specified custom commit id]
+
+from_last_commit = False
+
+if COMMIT_ID == 'HEAD':
+    id = get_last_commit()
+    if not id == None:
+        COMMIT_ID = id
+        from_last_commit = True
+
+######################################## [execute git rev-list] [for retrive all commit ids of range <given-commit-id>^..HEAD]
+
+git_command = ['git', 'rev-list', COMMIT_ID + ('' if from_last_commit else '^') + '..HEAD', '--reverse']
 
 result = subprocess.run(git_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
 if result.returncode == 0:
-    paths = result.stdout.splitlines()
-    
-    clear_destination(CONFIGS['DESTINATION_PATH'])
-    copy_paths(paths)
-
-    if copied_count == 0:
-        print('No changes in ', CONFIGS['LOCAL_PREXFIX'])
-    else:
-        print(copied_count, "files copied into", CONFIGS['DESTINATION_PATH'])
+    all_commit_ids = result.stdout.splitlines()
 else:
-    print("Error executing git diff-tree command:")
+    print("Error executing git rev-list command:")
     print(result.stderr)
+    exit()
+
+if (len(all_commit_ids) == 0):
+    print("No new commits.")
+    exit()
+
+print('New', len(all_commit_ids), 'commits there...')
+
+######################################## [store last commit id]
+
+store_last_commit(all_commit_ids[-1])
+
+######################################## [execute git diff-tree for all commits]
+
+changed_paths = []
+
+for id in all_commit_ids:
+    print("Reading changes for commit:", id)
+
+    git_command = ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', id]
+
+    result = subprocess.run(git_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    if result.returncode == 0:
+        changed_paths.extend(result.stdout.splitlines())
+    else:
+        print("Error executing git diff-tree command:")
+        print(result.stderr)
+
+######################################## [copy all changes]
+
+clear_destination(CONFIGS['DESTINATION_PATH'])
+
+copy_paths(changed_paths)
+
+if copied_count == 0:
+    print('No changes in ', CONFIGS['LOCAL_PREXFIX'])
+else:
+    print(copied_count, "files copied into", CONFIGS['DESTINATION_PATH'])
