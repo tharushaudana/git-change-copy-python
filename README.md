@@ -42,7 +42,15 @@ gitccpy <commit-id>
 
 - `<commit-id>`: The commit ID to compare against. The default value is `HEAD`.
 
-## Example
+### New Features
+
+As of the latest update, the script has the following new features:
+
+- **Read All Commits**: The script reads all commit IDs from the specified commit ID to `HEAD` (including the specified commit ID itself) using the `git rev-list` command and copies all changes of all commits.
+- **Store Last Commit ID**: After copying files, the script stores the `HEAD` commit ID in a file named `.gitccpy.lastcommit`.
+- **Automatic Incremental Updates**: The next time you run the `gitccpy` command without specifying a commit ID, the script reads all commits after the stored last commit ID (excluding the last commit itself).
+
+### Example
 
 To copy changed files from a specific directory to the destination path, set the configuration as follows:
 
@@ -63,7 +71,21 @@ Or using the executable:
 gitccpy
 ```
 
-This will copy all changed files in the `src/` directory to the `/var/www/html/` directory, preserving the folder structure.
+This will copy all changed files in the `src/` directory to the `/var/www/html/` directory, preserving the folder structure. After the operation, the `HEAD` commit ID will be saved in `.gitccpy.lastcommit`.
+
+To copy changes based on a specific commit ID and update the last commit record:
+
+```
+python gitccpy.py <commit-id>
+```
+
+Or using the executable:
+
+```
+gitccpy <commit-id>
+```
+
+This will copy all changed files from the specified commit ID to `HEAD` and update the `.gitccpy.lastcommit` file.
 
 ## Conclusion
 
